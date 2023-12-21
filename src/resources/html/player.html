@@ -1,0 +1,176 @@
+<!--
+  player.html
+  GJ_StampTour
+
+  Created by Js Na on 2023/09/13.
+  Copyright © 2023 Js Na, All rights reserved.
+-->
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공연 정보</title>
+    <style>
+        @import url('/css/font.css');
+        @import url('/css/root.css');
+
+        .titleBar {
+            /* invert */
+            filter: invert(1) grayscale(1) brightness(2);
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-y: scroll;
+        }
+
+        .MainContainer {
+            width: 100%;
+            height: 100%;
+            margin-top: 3em;
+            margin-bottom: 3em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #000000 0%, #000000 30%, #00000033 100%);
+        }
+
+        .BackgroundGradient {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -5678;
+            background-color: #000000;
+            transition: all 1s ease-in-out;
+        }
+
+        .PlayerContainer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            margin: 2em;
+            margin-top: 5em;
+            color: #ffffff;
+        }
+
+        .PlayerContainer h1 {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .PlayerContainer h2 {
+            font-size: 1.25em;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .rabbit-lyrics {
+            background: none !important;
+            border: none !important;
+        }
+
+        .rabbit-lyrics__line {
+            color: #ffffff !important;
+            font-size: 1.3em !important;
+            font-weight: 700 !important;
+            transition: all 0.5s ease-in-out !important;
+            opacity: 0.5 !important;
+        }
+
+        .rabbit-lyrics__inline--active {
+            color: #ffffff !important;
+        }
+
+        .rabbit-lyrics__line--active {
+            font-size: 1.5em !important;
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="titleBar" class="titleBar">
+        <img class="titleLogo" src="/images/StampTourLogo.png" alt="스탬프투어">
+        <h1>공연 정보</h1>
+    </div>
+    <div id="BackgroundGradient" class="BackgroundGradient">제목</div>
+    <div class="MainContainer">
+        <div class="PlayerContainer">
+            <!--<h2>지금 공연 중:</h2>-->
+            <h1 id="PlayerTitle"></h1>
+            <!--<audio id="audio-1" controls>
+                <source src="/line7_Dobongsan_end.mp3" type="audio/mpeg">
+            </audio>
+            <div class="rabbit-lyrics rabbit-lyrics--left rabbit-lyrics--clip" data-media="#audio-1">
+                [00:03.00] Hello
+                [00:05.00] World
+                [00:06.00] This is a little song
+                [00:07.00] The song that nobody knows
+            </div>
+        </div>-->
+        </div>
+        <script src="https://unpkg.com/@supabase/supabase-js"></script>
+        <script src="https://unpkg.com/rabbit-lyrics" type="text/javascript"></script>
+        <script src="/scripts/root.js"></script>
+        <script>
+            let BackgroundGradient = eById("BackgroundGradient");
+            let PlayerTitle = eById("PlayerTitle");
+            BackgroundGradient.style.backgroundColor = "#777777";
+
+            const { createClient } = supabase
+            const SUPABASE_URL = "https://uysgiuxfgczmyhbfwmzn.supabase.co";
+            const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5c2dpdXhmZ2N6bXloYmZ3bXpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTQ2MTk1ODQsImV4cCI6MjAxMDE5NTU4NH0.n8p4SccXUx7BYEB2RXPlNlpsnqYPDzXLDcELAWQyHsM";
+
+            const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log(supabaseClient);
+            const liveChannel = supabaseClient.channel("JsNa_GJ_LiveShow")
+
+            // Simple function to log any messages we receive
+            function messageReceived(payload) {
+                console.log(payload);
+                if (payload.event == "SetPlayerBackground") {
+                    BackgroundGradient.style.backgroundColor = payload.payload.message;
+                } else if (payload.event == "SetPlayerTitle") {
+                    PlayerTitle.innerText = payload.payload.message;
+                }
+            }
+            // Subscribe to the Channel
+            liveChannel
+                .on(
+                    "broadcast",
+                    { event: "SetPlayerBackground" },
+                    (payload) => messageReceived(payload)
+                ).on(
+                    "broadcast",
+                    { event: "SetPlayerTitle" },
+                    (payload) => messageReceived(payload)
+                ).subscribe((status) => {
+                    // Wait for successful connection
+                    if (status !== 'SUBSCRIBED') { return }
+                    console.log("Connected to live updates.")
+                });
+            /*
+    
+            setTimeout(() => {
+                BackgroundGradient.style.backgroundColor = "#603295";
+                PlayerTitle.innerText = "Hello, world! - Js Na";
+            }, 2000);
+            setTimeout(() => {
+                BackgroundGradient.style.backgroundColor = "#f73663";
+                PlayerTitle.innerText = "대충 두번째 공연";
+            }, 5000);
+            setTimeout(() => {
+                BackgroundGradient.style.backgroundColor = "#777777";
+            }, 8000);*/
+        </script>
+</body>
+
+</html>

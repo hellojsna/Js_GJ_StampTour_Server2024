@@ -1,0 +1,238 @@
+/*
+  index.css
+  GJ_StampTour
+
+  Created by Js Na on 2023/12/20.
+  Copyright © 2023 Js Na, All rights reserved.
+*/
+body {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    -webkit-touch-callout: none;
+}
+
+#GuideModalContainer {
+    z-index: 56789;
+}
+
+.bi-x {
+    width: 75%;
+    height: 75%;
+    position: absolute;
+}
+
+.GuideContainer {
+    padding: 1em;
+    box-sizing: border-box;
+}
+
+.FooterContainer {
+    display: flex;
+    width: 100%;
+    left: 0;
+    bottom: 0;
+}
+
+#GuideHint {
+    margin: 0;
+    word-break: keep-all;
+}
+
+.GuideVideo {
+    width: 100%;
+    max-height: 45vh;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.LinkButton {
+    margin: 0;
+    padding: 0;
+    font-size: 1em;
+    background: none;
+    border: none;
+    color: #007aff;
+}
+
+.LongButton {
+    background-color: #4E7CF1;
+    color: #FFFFFF;
+    font-size: 1.5em;
+    font-weight: 800;
+    width: 100%;
+    height: 2em;
+    border: none;
+    border-radius: 10px;
+    margin: 0 1em 1em;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.LongButton:disabled {
+    background-color: #A0A0A0;
+}
+
+.GuideText {
+    margin: 0.3em;
+    text-align: center;
+    word-break: keep-all;
+}
+
+#PrivacyPolicyCheckboxContainer {
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+#GuideText {
+    font-weight: 600;
+}
+
+#UserRegisterContainer {
+    margin: 5em 0;
+}
+
+.UserRegisterInput {
+    display: none;
+    opacity: 0;
+    width: 100%;
+    border: 1px solid #AFAFAF;
+    border-radius: 25px;
+    font-size: 1.3em;
+    margin: 0.5em 0;
+    padding: 0.2em;
+    box-sizing: border-box;
+    text-align: center;
+    transition: all 0.5s ease-in-out;
+}
+
+.UserRegisterInput.show {
+    opacity: 1;
+}
+
+.UserRegisterInput:focus {
+    border: 1px solid #4E7CF1;
+    outline: 1px solid #4E7CF1;
+}
+
+#ReplayButtonContainer {
+    visibility: hidden;
+    text-align: center;
+}
+
+.BottomContainer {
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    bottom: 0;
+    padding: 5em 1em;
+    box-sizing: border-box;
+}
+
+.BottomContainer.right {
+    right: 0;
+}
+
+.BottomContainer.left {
+    left: 0;
+}
+
+.BottomContainer a {
+    width: 5em;
+    background-color: #4E7CF1;
+    border: 2px solid #ffffff;
+    text-align: center;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    border-radius: 100px;
+    color: #ffffff;
+    font-weight: 700;
+    transition: all 0.2s ease-in-out;
+}
+
+.BottomContainer a:focus {
+    outline: none;
+}
+
+#FloorSelect {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.8em;
+}
+
+#FloorSelect a {
+    background-color: #ffffff;
+    color: #4E7CF1;
+    margin-bottom: 0.2em;
+    border: 2px solid #4E7CF1;
+}
+
+#FloorSelect a.selected {
+    background-color: #4E7CF1;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    margin-bottom: 0.2em;
+}
+
+.MapContainer {
+    width: 100%;
+    height: 100%;
+}
+
+.MapContainer svg {
+    width: 1400px;
+    height: 1400px;
+    visibility: hidden;
+    position: absolute;
+    background: none;
+    touch-action: pan-x pan-y;
+}
+
+#MainMapView {
+    background-color: #ffffff;
+    overflow: hidden;
+    width: 1400px;
+    height: 1400px;
+}
+
+.MapContainer svg.active {
+    visibility: visible;
+}
+
+.map {
+    width: 1400px;
+    height: 1400px;
+}
+
+svg text {
+    font-size: 1.5em;
+    font-weight: bold;
+    fill: #ffffff;
+    stroke: none;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+rect {
+    stroke: #809bf3;
+}
+
+.classroom {
+    fill: #4E7CF1;
+}
+
+.notClassroom {
+    fill: #4E7CF133;
+}
+
+.notClassroom text {
+    fill: #000000;
+}
+
+.hallway {
+    fill: #eaeaea;
+    stroke: none;
+}
