@@ -19,8 +19,9 @@
     align-items: flex-start;
 }
 
-.StampViewTitle button {
-    margin-top: 1em;
+.StampViewTitle button,
+.StampViewTitle a {
+    margin-top: 0.5em;
 }
 
 .stampList {
@@ -43,6 +44,7 @@
     align-items: center;
     position: relative;
 }
+
 .stampList div span {
     display: flex;
     flex-direction: column;
@@ -50,10 +52,12 @@
     align-items: flex-start;
     margin-left: 3.5em;
 }
+
 .stampList div span * {
     margin: 0;
     padding: 0;
 }
+
 .stampList div span p {
     opacity: 0.5;
 }
@@ -67,6 +71,7 @@
 .stamp.checked {
     filter: grayscale(0%);
 }
+
 .stamp.checked img.CheckMark {
     opacity: 1;
 }
@@ -75,6 +80,7 @@
     height: 3em;
     position: absolute;
 }
+
 .stamp img.CheckMark {
     opacity: 0;
     transition: all 0.5s ease;
@@ -86,4 +92,14 @@
 
 .StampView .stampList {
     display: flex;
+}
+
+/* GALAXY FOLD */
+@media (max-width: 280px) {
+    .stampList div span h2 {
+        font-size: 1.2em;
+    }
+    .stampList div span p {
+        font-size: 0.9em;
+    }
 }

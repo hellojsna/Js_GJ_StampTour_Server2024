@@ -48,6 +48,10 @@
                     <rect x="200" y="150" width="100" height="150" />
                     <text x="250" y="225">컴퓨터실</text>
                 </g>
+                <g id="1층홈베이스" class="classroom">
+                    <rect x="210" y="460" rx="10px" ry="10px" width="80" height="80" />
+                    <text x="250" y="500" style="font-size: 1em;">홈베이스</text>
+                </g>
                 <g id="행정실" class="notClassroom">
                     <rect x="300" y="450" width="150" height="100" />
                     <text x="375" y="500">행정실</text>
@@ -123,6 +127,10 @@
                 <g id="진로상담부" class="notClassroom">
                     <rect x="200" y="250" width="100" height="50" />
                     <text x="250" y="275" style="font-size: 1em;">진로상담부</text>
+                </g>
+                <g id="2층홈베이스" class="classroom">
+                    <rect x="210" y="460" rx="10px" ry="10px" width="80" height="80" />
+                    <text x="250" y="500" style="font-size: 1em;">홈베이스</text>
                 </g>
                 <g id="교실106" class="classroom">
                     <rect x="300" y="450" width="150" height="100" />
@@ -211,6 +219,10 @@
                     <text x="250" y="275" dy="-0.3em" style="font-size: 1em;">파스칼실</text>
                     <text x="250" y="275" dy="0.8em" style="font-size: 0.8em; font-weight: normal;">(수)</text>
                 </g>
+                <g id="3층홈베이스" class="classroom">
+                    <rect x="210" y="460" rx="10px" ry="10px" width="80" height="80" />
+                    <text x="250" y="500" style="font-size: 1em;">홈베이스</text>
+                </g>
                 <g id="이동수업실2" class="classroom">
                     <rect x="300" y="450" width="150" height="100" />
                     <text x="375" y="500">이동수업실2</text>
@@ -235,7 +247,7 @@
                     <rect x="1250" y="400" width="100" height="150" />
                     <text x="1300" y="475">교실 1-2</text>
                 </g>
-                <g id="교실103" class="classroom">
+                <g id="교실103" class="notClassroom">
                     <rect x="1250" y="550" width="100" height="150" />
                     <text x="1300" y="625">교실 1-3</text>
                 </g>
@@ -361,10 +373,13 @@
     <div id="ClassInfoModalContainer" class="ModalContainer">
         <div id="ClassInfoModal" class="Modal">
             <div class="ModalTitleContainer">
-                <h2 id="ClassInfoModalTitle">교실2-8</h2>
+                <h1 id="ClassInfoModalTitle">교실</h1>
             </div>
             <div class="ClassModalContent">
-                <p>TODO: 동아리 목록 표시</p>
+                <span>
+                    <h2 id="CMStampName">동아리명</h2>
+                    <p id="CMStampDesc">동아리행사내용</p>
+                </span>
                 <!--<p>동아리 정보가 없습니다.</p>-->
                 <!--<span style="display: flex;"><h3>(체크)</h3>&nbsp;&nbsp;<h3>동아리 이름</h3>&nbsp;&nbsp;<h3><a>기록 보기</a></h3></span>-->
             </div>
@@ -426,6 +441,8 @@
         <span class="StampViewTitle">
             <h1>스탬프투어</h1>
             <button id="ShowGuideButton" class="LinkButton">참여 방법 알아보기 &gt;</button>
+            <button id="HelpButton" class="LinkButton">채팅 지원 &gt;</button>
+
         </span>
         <div id="stampList" class="stampList"></div>
     </div>
@@ -435,5 +452,35 @@
 <script src="/scripts/root.js"></script>
 <script src="/scripts/JsAPI.js"></script>
 <script src="/scripts/index.js"></script>
+<script type="text/javascript">
+    var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+    (function () {
+        var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
+        s1.async = true;
+        s1.src = 'https://embed.tawk.to/6582447e07843602b803caeb/1hi2dn3rl';
+        s1.charset = 'UTF-8';
+        s1.setAttribute('crossorigin', '*');
+        s0.parentNode.insertBefore(s1, s0);
+
+    })();
+    window.Tawk_API.onLoad = function () {
+        console.log("Tawk API Loaded");
+        setTimeout(() => {
+            let iframes = document.getElementsByTagName("iframe");
+            let s = document.createElement("style");
+            s.innerHTML = `.tawk-chatinput-send{color:#4e7cf1 !important} ::selection{background:#4e7cf1 !important} .tawk-flex.tawk-flex-center.tawk-text-center.tawk-padding-small, .tawk-branding{padding:0 !important;transform:scale(0.9)} .tawk-icon.tawk-icon-attach-file{color:#4e7cf1} .file-upload-progress .progress-bar{background:#4e7cf1 !important} .tawk-header-text.tawk-margin-auto-left.tawk-flex-none.tawk-button-hover.tawk-button.tawk-button-text.tawk-button-color-inverse.tawk-tooltip{display:none}`
+            console.log(iframes);
+            for (let i = 0; i < iframes.length; i++) {
+                console.log(iframes[i].style.width);
+                if (iframes[i].style.width == "100%" && iframes[i].style.height == "100%") {
+                    iframes[i].contentDocument.head.appendChild(s);
+                }
+            }
+            eById("HelpButton").addEventListener("click", () => {
+                Tawk_API.maximize();
+            });
+        }, 1000);
+    };
+</script>
 
 </html>

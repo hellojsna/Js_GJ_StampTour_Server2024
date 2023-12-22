@@ -15,12 +15,40 @@
     <style>
         @import url('/css/font.css');
         @import url('/css/root.css');
+
         .MainContainer {
-            margin-top: 4em;
+            width: 100%;
+            height: 100%;
+            padding: 4em 0 8em 0;
+            box-sizing: border-box;
+        }
+
+        .Scanner {
+            position: relative;
+            width: 100%;
+            height: 100%;
             display: flex;
+
             justify-content: center;
             align-items: center;
         }
+
+        .Scanner img {
+            position: absolute;
+            width: 100%;
+            max-height: 90%;
+            object-fit: contain;
+            transform: scale(0.9);
+            animation: scanner 1.5s infinite ease-in-out;
+        }
+
+        .MainContainer video {
+            position: absolute;
+            width: 100%;
+            max-height: 90%;
+            transform: scale(1.2);
+        }
+
         #ScanResultContainer {
             position: fixed;
             display: flex;
@@ -33,10 +61,39 @@
             background-color: #f2f2f7;
             z-index: 999;
         }
-        #CheckIcon {
-            width: 3em;
-            height: 3em;
+
+        .successAlert {
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f2f2f7;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 56789;
             display: none;
+        }
+
+        #successVideo {
+            width: 100%;
+            max-height: 50%;
+        }
+
+        @keyframes scanner {
+            0% {
+                transform: scale(0.95);
+            }
+
+            50% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(0.95);
+            }
         }
     </style>
 </head>
@@ -44,59 +101,55 @@
 <body>
     <div id="titleBar" class="titleBar">
         <img class="titleLogo" src="/images/StampTourLogo.png" alt="스탬프투어">
-        <h1>태그 스캔</h1>
+        <h2>태그 스캔</h2>
     </div>
     <div class="MainContainer">
-        <video id="video" width="500" height="500" autoplay muted playsinline></video>
+        <div class="Scanner">
+            <video id="video" autoplay muted playsinline></video>
+            <img id="ScannerImage" src="/images/Scanner_scanning.png">
+        </div>
     </div>
     <div id="ScanResultContainer">
-        <img id="CheckIcon" src="/images/check.svg">
         <h3 id="ScanResult">스탬프의 아이콘을 카메라로 스캔해 주세요</h3>
     </div>
 </body>
 <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="/scripts/root.js"></script>
+<script src="/scripts/JsAPI.js"></script>
 <script>
     window.addEventListener('load', async function () {
         const codeReader = new ZXing.BrowserDatamatrixCodeReader();
+        codeReader.timeBetweenScansMillis = 100;
         console.log('ZXing BrowserDatamatrixCodeReader initialized');
-
+        console.log(codeReader)
         let video = document.getElementById("video");
-        let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        let stream = await navigator.mediaDevices.getUserMedia({ video: { focusMode: "auto", facingMode: "environment" }, audio: false });
         video.srcObject = stream;
         let selectedDeviceId = stream.getVideoTracks()[0].getSettings().deviceId;
-        codeReader.decodeFromInputVideoDeviceContinuously(selectedDeviceId, 'video', (result, err) => {
-            if (result) {
-                console.log('Found Data Matrix code!', result);
-                if (result.text == "S10") {
-                    checkStamp("3B562418-C85E-4E4D-9CB2-BF3A8D75AA49");
-                    eById("ScanResult").innerText = "스탬프 인식 완료. 메인 화면으로 이동합니다.";
-                    eById("CheckIcon").style.display = "block";
-                    setTimeout(() => {
-                        window.opener=null; window.open('','_self'); window.close(); window.history.go(-1); $(document.body).hide();
-                        window.location.href = "/";
-                    }, 3000);
-                }
-            } else if (err) {
-                console.error(err);
+        getJSON(`/api/stampList.json`, function (err, data) {
+            if (err != null) {
+                alert("스탬프 목록 데이터를 불러오는 중 오류가 발생했습니다.");
+            } else if (data !== null) {
+                let sL = data.stampList;
+                
+                codeReader.decodeFromInputVideoDeviceContinuously(selectedDeviceId, 'video', (result, err) => {
+                    if (result) {
+                        if (result.text.startsWith("S")) {
+                            let sI = Number(result.text.replace("S", ""));
+                            if (!isNaN(sI)) {
+                                eById("ScannerImage").src = "/images/Scanner_success.png";
+                                setTimeout(() => {
+                                    window.location.href = `/check?s=${sL[sI].stampId}`;
+                                }, 300);
+                                codeReader = null;
+                            }
+                        }
+                    }
+                });
             }
         });
+
     });
-    function checkStamp(stampId) {
-        let stampJSON = getCookie("LocalStamp");
-        if (stampJSON == null) {
-            // new array
-            let stampList = [stampId];
-            console.log(stampList);
-            console.log(JSON.stringify(stampList));
-            setCookie("LocalStamp", JSON.stringify(stampList), 7);
-        } else {
-            stampJSON = decodeURIComponent(stampJSON);
-            let stampList = JSON.parse(stampJSON);
-            stampList.push(stampId);
-            setCookie("LocalStamp", JSON.stringify(stampList), 7);
-        }
-    }
 </script>
 
 </html>

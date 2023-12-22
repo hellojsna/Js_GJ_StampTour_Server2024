@@ -18,6 +18,8 @@ let stampListView = eById("stampList");
 let GuideModalContainer = eById("GuideModalContainer");
 let ClassInfoModalContainer = eById("ClassInfoModalContainer");
 let ClassInfoModalTitle = eById("ClassInfoModalTitle");
+let CMSN = eById("CMStampName");
+let CMSD = eById("CMStampDesc");
 let VideoPlayer = eById("GuideVideo");
 let GuideHint = eById("GuideHint");
 let GuideText = eById("GuideText");
@@ -27,9 +29,9 @@ let StudentIdInput = eById("StudentIdInput");
 let StudentNameInput = eById("StudentNameInput");
 
 function init() {
-        setStampView();
-        getStampList();
-        enableCookieUpdate();
+    setStampView();
+    getStampList();
+    enableCookieUpdate();
 }
 function getStampList() {
     getJSON(`/api/stampList.json`, function (err, data) {
@@ -222,7 +224,6 @@ function checkDirection() {
 for (let i = 1; i <= 4; i++) { // Loop from 1 to 4 (number of floors)
     enableMapZoom(eById(`Floor${i}MapView`)); // Constructing the map ID dynamically
 }
-
 for (let i = 1; i <= 4; i++) {
     eById(`Floor${i}`).addEventListener("click", () => animateFloorChange(i));
 }
@@ -231,13 +232,41 @@ if (window.location.hash.startsWith("#Floor")) {
 }
 // MapContainer get child element that has class "classroom"
 console.log(classroomList);
-for (let i = 0; i < classroomList.length; i++) {
+getJSON(`/api/stampList.json`, function (err, data) {
+    if (err != null) {
+        alert("스탬프 목록 데이터를 불러오는 중 오류가 발생했습니다.");
+    } else if (data !== null) {
+        let sL = data.stampList;
+        for (let i = 0; i < sL.length; i++) {
+            let sD = sL[i];
+            let sDsL = sD.stampLocation.split(",");
+            if (sDsL.length > 1) {
+                for (let j = 0; j < sDsL.length; j++) {
+                    eById(sDsL[j]).addEventListener("click", () => {
+                        ClassInfoModalContainer.style.display = "flex";
+                        ClassInfoModalTitle.innerText = `${sDsL[j]}(${(sDsL[j - 1]) ? sDsL[j - 1] : sDsL[j + 1]})`;
+                        CMSN.innerText = sD.stampName;
+                        CMSD.innerText = sD.stampDesc;
+                    });
+                }
+            } else {
+                eById(sD.stampLocation).addEventListener("click", () => {
+                    ClassInfoModalContainer.style.display = "flex";
+                    ClassInfoModalTitle.innerText = sD.stampLocation;
+                    CMSN.innerText = sD.stampName;
+                    CMSD.innerText = sD.stampDesc;
+                });
+            }
+        }
+    }
+});
+/*for (let i = 0; i < classroomList.length; i++) {
     classroomList[i].addEventListener("click", () => {
         console.log(classroomList[i].id);
         ClassInfoModalContainer.style.display = "flex";
         ClassInfoModalTitle.innerText = classroomList[i].id;
     });
-}
+}*/
 for (let i = 0; i < notClassroomList.length; i++) {
     notClassroomList[i].addEventListener("click", () => {
         alert(`${notClassroomList[i].id} 부스 정보가 없습니다.`);
@@ -252,7 +281,6 @@ window.onload = function () {
         showNextGuide();
     }
 }
-
 
 StampView.addEventListener('touchstart', e => {
     const t = e.target;

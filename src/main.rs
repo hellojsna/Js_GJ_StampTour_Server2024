@@ -3,15 +3,18 @@ use actix_web::{
     get, web::post, web::resource, web::route, web::Data, web::Json, web::Redirect, App,
     HttpRequest, HttpResponse, HttpServer, Responder,
 };
+use async_std::task;
 use chrono;
 use log::{info, warn};
+use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use serde_with::serde_as;
 use std::{
     collections::BTreeMap, collections::HashMap, collections::HashSet, env, fs::File, io::Read,
-    path::Path, sync::Mutex,
+    path::Path, sync::Mutex, thread, time::Duration,
 };
+use svg;
 use uuid::Uuid;
 
 #[serde_as]
@@ -53,7 +56,8 @@ struct AddressInfo {
     protocol: String,
 }
 
-#[derive(Debug, Clone)]
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct UserList {
     users: BTreeMap<String, String>,
 }
@@ -435,6 +439,7 @@ async fn handle_stamp(
 async fn handle_admin(
     command: Json<Command>,
     stamp_history: Data<Mutex<StampHistory>>,
+    user_list: Data<Mutex<UserList>>,
     req: HttpRequest,
 ) -> HttpResponse {
     let ip = req.peer_addr().unwrap().ip();
@@ -456,11 +461,38 @@ async fn handle_admin(
     }
 
     if command.command == "stamp status".to_string() {
-        info!("{}", format!("req Command {}", command.command,));
-        cmd_output.output = format!("{:?}", stamp_history.lock().unwrap().stamp_history)
+        info!(
+            "{}",
+            format!("Database lookup request : {}", command.command,)
+        );
+        save_file("stamp_status", stamp_history.lock().unwrap().clone()).unwrap();
+        cmd_output.output = format!("{:?}", stamp_history.lock().unwrap().clone())
+    } else if command.command == "save all".to_string() {
+        save_file("stamp_status", stamp_history.lock().unwrap().clone()).unwrap();
+        save_file("user_status", user_list.lock().unwrap().clone()).unwrap();
+        cmd_output.output = "All databases saved".to_string()
     }
 
     HttpResponse::Ok().json(cmd_output)
+}
+
+fn save_file<T: serde::Serialize>(file_name: &str, data: T) -> Result<bool, bool> {
+    match File::create(format!("resources/database/{}.json", file_name)) {
+        Ok(mut file) => match serde_json::to_writer(file, &data) {
+            Ok(_) => {
+                info!("Database save complete");
+                return Ok(true);
+            }
+            Err(_) => {
+                info!("Database save Failed");
+                return Err(false);
+            }
+        },
+        Err(_) => {
+            info!("Database save Failed");
+            Err(false)
+        }
+    }
 }
 
 /// 로그인 요청을 처리하는 비동기 함수입니다. 주어진 사용자 이름을 사용하여 새로운 사용자를 등록하고,
@@ -556,7 +588,7 @@ fn user_registration(name: UserName) -> User {
 ///     println!("Loaded Stamp ID List: {:?}", stamp_id_list);
 /// }
 /// ```
-fn parse_json() -> StampIdList {
+fn stamp_db() -> StampIdList {
     // 파일 열기
     let StampList: StampList = match File::open("resources/api/stampList.json") {
         Ok(mut file) => {
@@ -565,12 +597,12 @@ fn parse_json() -> StampIdList {
             file.read_to_string(&mut file_content)
                 .expect("Failed to read file content");
 
-            info!("Database load complete");
+            info!("Stamp Database load complete");
             // JSON 문자열을 파싱하여 StampList 구조체로 변환
             from_str(&file_content).expect("Failed to parse JSON")
         }
         Err(_) => {
-            info!("Database load Failed");
+            warn!("Stamp Database load Failed");
             StampList {
                 stampList: HashSet::new(),
             }
@@ -590,6 +622,57 @@ fn parse_json() -> StampIdList {
 
     // 최종적으로 구성된 StampIdList 반환
     stamp_id_list
+}
+
+fn stamp_history_db(stamp_id_list: StampIdList) -> StampHistory {
+    // 파일 열기
+    let stamp_history: StampHistory = match File::open("resources/database/stamp_status.json") {
+        Ok(mut file) => {
+            // 파일 내용을 읽어 문자열로 변환
+            let mut file_content = String::new();
+            file.read_to_string(&mut file_content)
+                .expect("Failed to read file content");
+
+            info!("Stamp History Database load complete");
+            // JSON 문자열을 파싱하여 StampList 구조체로 변환
+            from_str(&file_content).expect("Failed to parse JSON")
+        }
+        Err(_) => {
+            warn!("Stamp History load Failed");
+            StampHistory {
+                stamp_history: stamp_history(stamp_id_list),
+            }
+        }
+    };
+
+    // 로그 출력: 데이터베이스 로드 완료 메시지
+
+    // 최종적으로 구성된 StampIdList 반환
+    stamp_history
+}
+
+fn user_list_db() -> UserList {
+    // 파일 열기
+    let user_list: UserList = match File::open("resources/database/user_status.json") {
+        Ok(mut file) => {
+            // 파일 내용을 읽어 문자열로 변환
+            let mut file_content = String::new();
+            file.read_to_string(&mut file_content)
+                .expect("Failed to read file content");
+
+            info!("User List Database load complete");
+            // JSON 문자열을 파싱하여 StampList 구조체로 변환
+            from_str(&file_content).expect("Failed to parse JSON")
+        }
+        Err(_) => {
+            warn!("User List Database load Failed");
+            UserList {
+                users: Default::default(),
+            }
+        }
+    };
+
+    user_list
 }
 
 /// 주어진 스탬프 ID를 사용하여 HTML 파일을 형식화하는 비동기 함수입니다.
@@ -746,17 +829,19 @@ async fn read_file(path: &Path) -> Result<String, Vec<u8>> {
     let binary_file_list: Vec<&str> = vec!["ico", "png", "webp", "ttf", "woff2", "woff"];
 
     // 파일 내용을 저장할 벡터
-    let mut contents = Vec::new();
+    let mut binary_contents = Vec::new();
+    let mut str_contents = String::new();
 
     // 파일을 열고 오류를 문자열로 변환하여 반환
     File::open(path)
         .map_err(|e| {
             // println!("파일 {:?} 의 경로를 찾을수 없습니다.", path);
-            contents = "File not found file error".as_bytes().to_vec()
+            str_contents = "File not found file error".to_string()
         })
         .and_then(|mut file| {
             // ? 연산자를 사용하여 오류가 발생하면 조기에 반환
-            file.read_to_end(&mut contents).expect("파일 읽기 실패");
+            file.read_to_end(&mut binary_contents)
+                .expect("파일 읽기 실패");
             Ok::<String, _>(format!("파일 {:?} 읽기 실패", path))
         })
         .ok(); // 결과가 이미 로깅되었으므로 무시합니다.
@@ -766,12 +851,15 @@ async fn read_file(path: &Path) -> Result<String, Vec<u8>> {
 
     if let Some(&list_extension) = split_extension.last() {
         if binary_file_list.contains(&list_extension) {
-            return Err(contents);
+            return Err(binary_contents);
+        } else if &"svg" == &list_extension {
+            svg::open(path, &mut str_contents).unwrap();
+            return Ok(str_contents);
         }
     }
 
     // 이진 데이터를 문자열로 변환하고, 변환에 실패하면 에러를 반환
-    String::from_utf8(contents.clone()).map_err(|_| contents)
+    String::from_utf8(binary_contents.clone()).map_err(|_| binary_contents)
 }
 
 /// 커맨드라인 인수를 파싱하여 서버 바인딩 정보를 추출합니다.
@@ -858,12 +946,10 @@ fn stamp_history(stamp_id_list: StampIdList) -> HashMap<String, Vec<StampUserInf
 // Actix-web 서버 구성 및 설정
 async fn run(address: AddressInfo) -> std::io::Result<()> {
     // 유저 리스트 초기화
-    let user_list: Data<Mutex<UserList>> = Data::new(Mutex::new(UserList {
-        users: BTreeMap::new(),
-    }));
+    let user_list: Data<Mutex<UserList>> = Data::new(Mutex::new(user_list_db()));
 
     // 데이터베이스 초기화
-    let stamp_list: StampIdList = parse_json();
+    let stamp_list: StampIdList = stamp_db();
 
     // 유저 스템프 요청 초기화
     let user_stamp_list: Data<Mutex<UserStampList>> = Data::new(Mutex::new(UserStampList {
@@ -872,9 +958,8 @@ async fn run(address: AddressInfo) -> std::io::Result<()> {
 
     let move_address = address.clone();
 
-    let user_history: Data<Mutex<StampHistory>> = Data::new(Mutex::new(StampHistory {
-        stamp_history: stamp_history(stamp_list.clone()),
-    }));
+    let user_history: Data<Mutex<StampHistory>> =
+        Data::new(Mutex::new(stamp_history_db(stamp_list.clone())));
 
     HttpServer::new(move || {
         App::new()
@@ -898,6 +983,38 @@ async fn run(address: AddressInfo) -> std::io::Result<()> {
     .await
 }
 
+// fn auto_save(delay: u64) {
+//     info!(
+//         "{}",
+//         format!("Autosave is enabled. Auto-save interval: {} min", delay)
+//     );
+//
+//     loop {
+//         thread::sleep(Duration::from_secs(delay * 60));
+//         info!("Auto-saving...");
+//         let response = Client::new()
+//             .post("http://127.0.0.1:80/admin")
+//             .json(&Command {
+//                 command: "save all".to_string(),
+//                 output: "".to_string(),
+//             })
+//             .header("Content-Type", "application/json")
+//             .send();
+//         info!("Auto-save completed")
+//     }
+// }
+
+// async fn run_auto_save(delay: u64, url: &str, client: Client, cmd: Command) -> bool {
+//     let response = client
+//         .post(url)
+//         .json(&cmd)
+//         .header("Content-Type", "application/json")
+//         .send()
+//         .await;
+//
+//     // 응답 상태 코드 확인
+//     response.unwrap().status() == StatusCode::OK
+// }
 // 메인 함수
 #[actix_web::main]
 async fn main() {
@@ -912,13 +1029,13 @@ async fn main() {
     info!(
         "{}",
         format!(
-            "[ version ]: 0.1.0 | Rust {protocol} Actix-web server started at {protocol}://{address}:{port}",
+            "[ version ]: 0.1.2 | Rust {protocol} Actix-web server started at {protocol}://{address}:{port}",
             protocol = address_info.protocol,
             address = address_info.address,
             port = address_info.port
         )
     );
 
-    // thread::spawn(|| handle_command());
+    // let handle = thread::spawn(|| auto_save(1));
     run(address_info).await.unwrap();
 }

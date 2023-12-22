@@ -26,7 +26,7 @@
         },
         {
             "stampId": "4280608D-22DB-4345-96DC-6DF5775861E1",
-            "stampLocation": "2학년학습실,이동수업실4",
+            "stampLocation": "2학년학습실이동수업실4",
             "stampName": "라라파루자(주짓수)",
             "stampDesc": "팔씨름 경기 및 체력 측정"
         },
@@ -116,7 +116,7 @@
         },
         {
             "stampId": "C18102FC-BA1D-4ACA-A66C-5D004864A9BF",
-            "stampLocation": "컴퓨터실",
+            "stampLocation": "교실203",
             "stampName": "중국 문화 체험반",
             "stampDesc": "판다 키링 만들기, 판다 월병 만들기"
         },
