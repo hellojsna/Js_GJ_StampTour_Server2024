@@ -3,16 +3,14 @@ use actix_web::{
     get, web::post, web::resource, web::route, web::Data, web::Json, web::Redirect, App,
     HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use async_std::task;
 use chrono;
 use log::{info, warn};
-use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use serde_with::serde_as;
 use std::{
     collections::BTreeMap, collections::HashMap, collections::HashSet, env, fs::File, io::Read,
-    path::Path, sync::Mutex, thread, time::Duration,
+    path::Path, sync::Mutex
 };
 use svg;
 use uuid::Uuid;
