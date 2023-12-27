@@ -4,7 +4,7 @@ use actix_web::{
     HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use chrono;
-use log::{info, warn};
+use log::{info, warn, error};
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use serde_with::serde_as;
@@ -12,6 +12,7 @@ use std::{
     collections::BTreeMap, collections::HashMap, collections::HashSet, env, fs::File, io::Read,
     path::Path, sync::Mutex
 };
+use std::panic::panic_any;
 use svg;
 use uuid::Uuid;
 
@@ -369,10 +370,10 @@ async fn handle_stamp(
     let user_id = cookie.value();
 
     // 유저의 스템프 정보를 복사
-    let list = user_stamp_list.lock().unwrap().user_stamp_list.clone();
+    let su_list = user_stamp_list.lock().unwrap().user_stamp_list.clone();
 
     // 유저의 스템프 정보를 확인하고 찾은 경우 갱신 및 형식화된 HTML 반환
-    if !list.contains_key(user_id) {
+    if !su_list.contains_key(user_id) {
         warn!(
             "{}",
             format!(
@@ -389,26 +390,20 @@ async fn handle_stamp(
         .user_stamp_list
         .remove(user_id);
 
-    let stamp_id = list.get(user_id).unwrap();
-    let user_name = user_list
-        .lock()
-        .unwrap()
-        .users
-        .get(user_id)
-        .unwrap()
-        .to_string();
+    let stamp_id = su_list.get(user_id).unwrap();
+    let user_list = user_list.lock().unwrap().users.clone();
     let timestamp = chrono::prelude::Utc::now().to_string();
     user_history
         .lock()
         .unwrap()
         .stamp_history
-        .get_mut(stamp_id)
-        .unwrap()
+        .get_mut(stamp_id).unwrap()
         .extend(vec![StampUserInfo {
             user_id: user_id.to_string(),
-            user_name,
+            user_name: user_list.get(user_id).unwrap().to_string(),
             timestamp,
         }]);
+
 
     // 로그 출력: 스템프 찍기 완료 메시지
     info!(
@@ -482,12 +477,12 @@ fn save_file<T: serde::Serialize>(file_name: &str, data: T) -> Result<bool, bool
                 return Ok(true);
             }
             Err(_) => {
-                info!("Database save Failed");
+                error!("Database save Failed");
                 return Err(false);
             }
         },
         Err(_) => {
-            info!("Database save Failed");
+            error!("Database save Failed");
             Err(false)
         }
     }
@@ -588,7 +583,7 @@ fn user_registration(name: UserName) -> User {
 /// ```
 fn stamp_db() -> StampIdList {
     // 파일 열기
-    let StampList: StampList = match File::open("resources/api/stampList.json") {
+    let stamp_list: StampList = match File::open("resources/api/stampList.json") {
         Ok(mut file) => {
             // 파일 내용을 읽어 문자열로 변환
             let mut file_content = String::new();
@@ -598,28 +593,26 @@ fn stamp_db() -> StampIdList {
             info!("Stamp Database load complete");
             // JSON 문자열을 파싱하여 StampList 구조체로 변환
             from_str(&file_content).expect("Failed to parse JSON")
-        }
+        },
         Err(_) => {
-            warn!("Stamp Database load Failed");
-            StampList {
-                stampList: HashSet::new(),
-            }
+            error!("Stamp Database load Failed");
+            StampList { stampList: HashSet::new()}
         }
     };
 
     // StampList에서 스탬프 ID 리스트를 추출하여 StampIdList 구조체로 변환
-    let stamp_id_list = StampIdList {
-        stamp_id_list: StampList
+    if stamp_list.stampList.is_empty() {
+        error!("Stamp DataBase load Failed");
+        panic_any("Stamp DataBase load Failed");
+    }
+
+    StampIdList {
+        stamp_id_list: stamp_list
             .stampList
             .iter()
             .map(|stamp| (stamp.stampId.clone(), stamp.clone()))
             .collect(),
-    };
-
-    // 로그 출력: 데이터베이스 로드 완료 메시지
-
-    // 최종적으로 구성된 StampIdList 반환
-    stamp_id_list
+    }
 }
 
 fn stamp_history_db(stamp_id_list: StampIdList) -> StampHistory {
@@ -751,7 +744,8 @@ async fn handle_html(req: HttpRequest) -> impl Responder {
     match path("html", file).await {
         Ok(result) => {
             // 파일이 존재하지 않는 경우 404 응답 반환
-            if result.contains("File not found file error") {
+            if result.contains("File not found") {
+                error!("{}", format!("File not found {}", file));
                 handle_404().await
             } else {
                 // 파일이 성공적으로 읽혔을 경우 200 OK 응답과 파일 내용 반환
@@ -834,7 +828,7 @@ async fn read_file(path: &Path) -> Result<String, Vec<u8>> {
     File::open(path)
         .map_err(|e| {
             // println!("파일 {:?} 의 경로를 찾을수 없습니다.", path);
-            str_contents = "File not found file error".to_string()
+            str_contents = "File not found".to_string()
         })
         .and_then(|mut file| {
             // ? 연산자를 사용하여 오류가 발생하면 조기에 반환
