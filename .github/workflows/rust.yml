@@ -23,7 +23,7 @@ jobs:
     - name: Install cross-compilation tools
       uses: taiki-e/setup-cross-toolchain-action@v1
       with:
-        target: x64-unknown-linux-gnu
+        target: x86_64-unknown-linux-gnu
         
     - name: Install pkg-config and openssl
       run: sudo apt install pkg-config libssl-dev
