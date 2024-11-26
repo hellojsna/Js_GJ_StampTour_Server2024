@@ -27,7 +27,9 @@ jobs:
         
     - name: Install pkg-config and openssl
       run: sudo apt install pkg-config libssl-dev
-
+    - name : cargo update
+      run: cargo update
+      
     - name: Build
       run: cargo build --release --verbose 
     - name: Run tests
