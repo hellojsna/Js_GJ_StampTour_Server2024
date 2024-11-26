@@ -36,4 +36,4 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.3
       with:
-        path: target/aarch64-unknown-linux-gnu/release/Js_GJ_StampTour_Server2024
+        path: target/aarch64-unknown-linux-gnu/release/GJ_StampTour
